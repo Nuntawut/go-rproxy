@@ -12,14 +12,14 @@ type Server map[string]string
 
 func (s Server) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 	if addr, ok := s[r.Host]; ok {
-		if c, e := net.Dial("tcp", "", addr); e == nil {
-			if oc, _, e := out.Hijack(); e == nil {
+		if c, e := net.Dial("tcp",addr); e == nil {
+			if oc, _,e := out.(http.Hijacker).Hijack(); e == nil {
 				go func() {
 					io.Copy(oc, c)
 					oc.Close()
 				}()
 				go func() {
-					r.Header["X-Forwarded-For"] = out.RemoteAddr()
+					r.Header["X-Forwarded-For"] = http.Request.RemoteAddr
 					r.Write(c)
 					io.Copy(c, oc)
 					c.Close()
@@ -41,7 +41,7 @@ func main() {
 		Host string
 		Services Server
 	})
-	if f, e = os.Open("config.json", os.O_RDONLY, 0); e == nil {
+	if f, e = os.Open("config.json"); e == nil {
 		if e = json.NewDecoder(f).Decode(c); e == nil {
 			var l net.Listener
 			if l, e = net.Listen("tcp", c.Host); e == nil {
