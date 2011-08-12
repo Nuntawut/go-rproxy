@@ -19,7 +19,7 @@ func (s Server) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 					oc.Close()
 				}()
 				go func() {
-					r.Header["X-Forwarded-For"] = out.RemoteAddr()
+					r.Header.Set("X-Forwarded-For",r.RemoteAddr)
 					r.Write(c)
 					io.Copy(c, oc)
 					c.Close()
