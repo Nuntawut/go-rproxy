@@ -6,6 +6,7 @@ import (
 	"http"
 	"os"
 	"io"
+	"log"
 )
 
 type Server map[string]string
@@ -24,10 +25,16 @@ func (s Server) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 					io.Copy(c, oc)
 					c.Close()
 				}()
+				if file,e := os.OpenFile("access.log", os.O_RDWR|os.O_APPEND|os.O_CREATE,0666); e == nil {
+					log.SetOutput(io.MultiWriter(file,os.Stdout))
+					log.Println(r.RemoteAddr,r.Host,r.Method,r.Header["Referer"],r.Proto,r.Header["User-Agent"])
+					file.Close()
+				}		
 				return
 			} else c.Close()
 		} else os.Stderr.WriteString(os.Args[0] + ": " + e.String() + "\n")
 	}
+	log.Println("Service Unavailable")
 	out.WriteHeader(503)
 	out.Write([]byte("Service Unavailable"))
 }
